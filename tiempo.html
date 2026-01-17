@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Pantalla Auditorio - Coppel</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css?family=Roboto+Mono:700&display=swap');
+        
+        body, html {
+            margin: 0; padding: 0; height: 100%;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #263238; color: white;
+            transition: background-color 0.8s ease;
+            overflow: hidden;
+        }
+
+        .main-container {
+            height: 100vh;
+            padding: 40px; 
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        #header-info { text-align: center; margin-bottom: 20px; width: 100%; }
+        #out-name { font-size: 5vw; margin: 0; text-transform: uppercase; font-weight: 800; letter-spacing: 1px; }
+        #out-center { font-size: 2.5vw; margin: 10px 0 0 0; opacity: 0.9; font-weight: 400; }
+
+        #timer-wrapper { margin-top: -30px; text-align: center; }
+        #timer { font-family: 'Roboto Mono', monospace; font-size: 20vw; font-weight: 700; line-height: 1; margin: 0; letter-spacing: -10px; }
+
+        #extra-box {
+            margin-top: 30px; padding: 15px 40px; border-radius: 20px;
+            background: rgba(0,0,0,0.4); display: none; text-align: center;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+        .extra-label { font-size: 2vw; text-transform: uppercase; letter-spacing: 5px; display: block; margin-bottom: 5px; color: #ff8a80; }
+        #extra-timer { font-family: 'Roboto Mono', monospace; font-size: 10vw; font-weight: 700; margin: 0; color: #ff5252; }
+
+        .blink { animation: flash 1s step-end infinite; }
+        @keyframes flash { 50% { opacity: 0.3; } }
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        <div id="header-info">
+            <h1 id="out-name">BIENVENIDOS</h1>
+            <h2 id="out-center">AUDITORIO COPPEL</h2>
+        </div>
+        <div id="timer-wrapper">
+            <p id="timer">00:00:00</p>
+        </div>
+        <div id="extra-box">
+            <span class="extra-label">TIEMPO EXTRA</span>
+            <p id="extra-timer">00:00:00</p>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let ticker;
+        let count;
+
+        // Escuchar cuando el control ordena iniciar
+        socket.on('start-timer', (data) => {
+            count = data.totalSeconds;
+            document.getElementById('out-name').innerText = data.speaker;
+            document.getElementById('out-center').innerText = data.workplace;
+            
+            clearInterval(ticker);
+            update();
+            ticker = setInterval(() => {
+                count--;
+                update();
+            }, 1000);
+        });
+
+        // Escuchar cuando el control ordena resetear
+        socket.on('reset-timer', () => {
+            clearInterval(ticker);
+            location.reload();
+        });
+
+        function formatTime(s) {
+            const sec = Math.abs(s);
+            const hh = Math.floor(sec / 3600).toString().padStart(2, '0');
+            const mm = Math.floor((sec % 3600) / 60).toString().padStart(2, '0');
+            const ss = (sec % 60).toString().padStart(2, '0');
+            return `${hh}:${mm}:${ss}`;
+        }
+
+        function update() {
+            const mainTimer = document.getElementById('timer');
+            const extraTimer = document.getElementById('extra-timer');
+            const extraBox = document.getElementById('extra-box');
+            const body = document.body;
+
+            if (count >= 0) {
+                mainTimer.innerText = formatTime(count);
+                extraBox.style.display = "none";
+                mainTimer.classList.remove('blink');
+            } else {
+                mainTimer.innerText = "00:00:00"; 
+                mainTimer.classList.add('blink');
+                extraBox.style.display = "block"; 
+                extraTimer.innerText = formatTime(count);
+            }
+
+            // Lógica de colores
+            if (count <= 0) body.style.backgroundColor = "#B71C1C";
+            else if (count <= 60) { body.style.backgroundColor = "#FDD835"; body.style.color = "black"; }
+            else if (count <= 180) { body.style.backgroundColor = "#FB8C00"; body.style.color = "white"; }
+            else if (count <= 300) { body.style.backgroundColor = "#6A1B9A"; body.style.color = "white"; }
+            else { body.style.backgroundColor = "#263238"; body.style.color = "white"; }
+        }
+    </script>
+</body>
+</html>

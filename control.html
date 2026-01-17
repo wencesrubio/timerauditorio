@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Panel de Control - Operador</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body {
+            background-color: #121212;
+            color: white;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #panel {
+            background: #1a1a1a;
+            padding: 30px;
+            border-radius: 12px;
+            width: 350px;
+            border: 2px solid #444;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        h3 { margin: 0 0 20px 0; color: #2196F3; text-transform: uppercase; text-align: center; }
+        
+        input {
+            width: 100%; padding: 12px; margin-bottom: 15px;
+            border-radius: 6px; border: 1px solid #333; 
+            background: #222; color: white; font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        .time-inputs { display: flex; gap: 10px; margin-bottom: 15px; }
+        
+        button {
+            width: 100%; padding: 15px; cursor: pointer;
+            font-weight: bold; border: none; border-radius: 6px;
+            text-transform: uppercase; font-size: 14px; margin-bottom: 10px;
+        }
+
+        #btn-start { background: #2196F3; color: white; }
+        #btn-start:hover { background: #1976D2; }
+        #btn-reset { background: #f44336; color: white; }
+    </style>
+</head>
+<body>
+
+    <div id="panel">
+        <h3>Control de Tiempo</h3>
+        <input type="text" id="name" placeholder="Nombre del Ponente">
+        <input type="text" id="center" placeholder="Centro de Trabajo">
+        <div class="time-inputs">
+            <input type="number" id="hrs" placeholder="Hrs" min="0" value="0">
+            <input type="number" id="mins" placeholder="Min" min="0" value="5">
+        </div>
+        <button id="btn-start" onclick="sendStart()">Iniciar Ponencia</button>
+        <button id="btn-reset" onclick="sendReset()">Detener y Limpiar</button>
+    </div>
+
+    <script>
+        const socket = io();
+
+        function sendStart() {
+            const h = parseInt(document.getElementById('hrs').value) || 0;
+            const m = parseInt(document.getElementById('mins').value) || 0;
+            const speaker = document.getElementById('name').value || "PONENTE";
+            const workplace = document.getElementById('center').value || "COPPEL";
+
+            if (h === 0 && m === 0) return alert("Por favor, pon un tiempo.");
+
+            const totalSeconds = (h * 3600) + (m * 60);
+
+            // Enviamos los datos al servidor para que los reparta
+            socket.emit('updateTimer', {
+                totalSeconds: totalSeconds,
+                speaker: speaker,
+                workplace: workplace,
+                status: "RUNNING"
+            });
+        }
+
+        function sendReset() {
+            socket.emit('resetRequest');
+        }
+    </script>
+</body>
+</html>
